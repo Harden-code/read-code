@@ -358,13 +358,13 @@ static void invokeChannelRegistered(final AbstractChannelHandlerContext next) {
 
 
 
-#####ByteBufAllocator
+##### ByteBufAllocator
 
 内存分配器
 
 
 
-#####ByteBufHolder
+##### ByteBufHolder
 
 提供了访问底层数据和引用计数的方法
 
