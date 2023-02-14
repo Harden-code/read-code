@@ -1,12 +1,12 @@
 #### SpringBoot
 
-####Maven打包的启动类Main-Class：
+#### Maven打包的启动类Main-Class：
 
 org.springframework.boot.loader.JarLauncher  jar启动类
 
 org.springframework.boot.loader.WarLauncher war启动类
 
-####内嵌Web容器相关接口
+#### 内嵌Web容器相关接口
 
 org.springframework.boot.web.server.AbstractConfigurableWebServerFactory 内嵌容器创建工场抽象类
 
@@ -98,7 +98,7 @@ org.springframework.context.annotation.ConfigurationClassPostProcessor spring生
 - 代码配置方法：1.@EnableAutoConfiguration#exclude；2.@EnableAutoConfiguration#excludeName
 - 外部化属性配置放：spring.autoconfigure.exclude
 
-#####实现原理
+##### 实现原理
 
 通过spi加载META-INF/spring.factories
 
