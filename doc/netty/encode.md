@@ -1,4 +1,4 @@
-####解码器
+#### 解码器
 
 byte-->消息
 
@@ -12,7 +12,7 @@ io.netty.handler.codec.MessageToMessageDecoder
 
 io.netty.handler.codec.MessageToMessageDecoder#decode
 
-####编码器
+#### 编码器
 
 消息-->byte
 
@@ -26,7 +26,7 @@ io.netty.handler.codec.MessageToMessageEncoder
 
 io.netty.handler.codec.MessageToMessageEncoder#encode
 
-####内嵌编解码处理器
+#### 内嵌编解码处理器
 
 DelimiterBasedFrameDecoder 使用自定义分割符
 
