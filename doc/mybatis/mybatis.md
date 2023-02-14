@@ -33,11 +33,11 @@ org.apache.ibatis.executor.loader.ProxyFactory 动态代理对象，分别有两
 
 > MetaObject，MetaClass 用于对类和对象的操作；ObjectFactory，ProxyFactory 用于对象创建，ObjectFactory创建Mapper映射的实体对象，ProxyFactory 用于创建Mapper映射实体对象的动态代理对象
 
-###核心组件
+### 核心组件
 
 ![](./proccess.jpg)
 
-#####Configuration
+##### Configuration
 
 用于配置Mybatis主配置信息，比如Mapper，类型别名，TypeHandler等；该类的属性跟xml里的标签对应，还作为Executor、StatementHandler、ResultSetHandler、ParameterHandler组件的工厂类
 
@@ -72,7 +72,7 @@ protected final LanguageDriverRegistry languageRegistry = new LanguageDriverRegi
   protected final Map<String, KeyGenerator> keyGenerators = new StrictMap<KeyGenerator>("Key Generators collection");
 ```
 
-#####MappedStatement
+##### MappedStatement
 
 描述Mapper种SQL配置信息，对XML配置文件种<select|update|delete|insert>等标签或@select等注解配置信息的封装，对应的属性都跟xml匹配。
 
@@ -90,23 +90,23 @@ BatchExecutor：会对调用同一个Mapper执行的update、insert和delete操�
 
 CachingExecutor：为查询操作增加二级缓存功能
 
-#####SqlSession
+##### SqlSession
 
 面向用户api，表示和数据库交互时的会话对象，用于完成数据库的增删改查；sqlsession是executor组件的外观，目的为用户提供友好的api
 
-#####StatementHandler
+##### StatementHandler
 
 封装对jdbc statement对象的操；SimpleStatementHandler继承至BaseStatementHandler，封装了对JDBC Statement对象的操作，PreparedStatementHandler封装了对JDBC PreparedStatement对象的操作，而CallableStatementHandler则封装了对JDBC CallableStatement对象的操作。
 
-#####ParamenterHandler
+##### ParamenterHandler
 
 封装对jdbc parament对象的操，如果SQL语句中有参数占位符，在执行SQL语句之前，就需要为参数占位符设置。默认实现DefaultParameterHandler，观察setParameters方法
 
-#####ResultSetHandler
+##### ResultSetHandler
 
 封装对jdbc resultset对象的操作，用于在StatementHandler对象执行完查询操作或存储过程后，对结果集或存储过程的执行结果进行处理
 
-#####TypeHandler
+##### TypeHandler
 
 类型处理，用于处理Java类型与jdbc类型之间的映射
 
