@@ -30,7 +30,7 @@ public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBoun
 }
 ```
 
-####二级缓存实现
+#### 二级缓存实现
 
 SqlSession将执行Mapper的逻辑委托给Executor组件完成，而Executor接口有几种不同的实现，分别为SimpleExecutor、BatchExecutor、ReuseExecutor。另外，还有一个比较特殊的CachingExecutor，CachingExecutor用到了装饰器模式，在其他几种Executor的基础上增加了二级缓存功能。
 
@@ -55,9 +55,9 @@ public Executor newExecutor(Transaction transaction, ExecutorType executorType) 
 }
 ```
 
-###Mybatis懒加载和级联映射
+### Mybatis懒加载和级联映射
 
-####级联操作
+#### 级联操作
 
 级联映射实现一对多，一对一或者多对多的关联查询
 
@@ -65,7 +65,7 @@ public Executor newExecutor(Transaction transaction, ExecutorType executorType) 
 
 一对一配置：通过<resultMap>配置< association property="">< id column=" " properties="" >< /association >标签
 
-####懒加载
+#### 懒加载
 
 懒加载，当在一个实体对象中关联其他实体对象时，如果不需要获取被关联的实体对象，则不需要为被关联执行额外查询操作，仅当调用当前实体对象get方法获取被关联实体对象时，才会执行一次额外的查询操作
 
