@@ -1,4 +1,4 @@
-####额外handler实现
+#### 额外handler实现
 
 在Netty中字节流的转换处理都是通过handler的事件进行扩展，在源代码库netty-handler模块中也有很多handler扩展。
 
@@ -8,7 +8,7 @@
 - io.netty.handler.logging.LoggingHandler
 - io.netty.handler.ssl.SslHandler
 
-####利用IdleStateHandler实现keepAlive功能
+#### 利用IdleStateHandler实现keepAlive功能
 
 ```java
 public class MyChannelInitializer extends ChannelInitializer<Channel> {
