@@ -1,0 +1,8 @@
+####生命周期回调接口
+
+org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessor
+
+####AutowiredAnnotationBeanPostProcessor 依赖注入的实现类
+
+1. 通过生命周期回调接口postProcessMergedBeanDefinition，寻找注入元信息，封装成InjectionMetadata对象放入injectionMetadataCache里
+2. org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor#postProcessProperties 依赖注入的实现，在bean实例创建后属性赋值是org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory#populateBean，会先寻找容器里的InstantiationAwareBeanPostProcessors对象，紧接这调用postProcessPropertyValues方法

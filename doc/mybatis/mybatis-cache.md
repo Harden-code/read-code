@@ -79,3 +79,4 @@ public Executor newExecutor(Transaction transaction, ExecutorType executorType) 
 ### Mapper动态代理对象注册
 
 @MapperScan
+

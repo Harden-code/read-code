@@ -96,11 +96,11 @@ CachingExecutor：为查询操作增加二级缓存功能
 
 ##### StatementHandler
 
-封装对jdbc statement对象的操；SimpleStatementHandler继承至BaseStatementHandler，封装了对JDBC Statement对象的操作，PreparedStatementHandler封装了对JDBC PreparedStatement对象的操作，而CallableStatementHandler则封装了对JDBC CallableStatement对象的操作。
+封装对jdbc statement对象的操作；SimpleStatementHandler继承至BaseStatementHandler，封装了对JDBC Statement对象的操作，PreparedStatementHandler封装了对JDBC PreparedStatement对象的操作，而CallableStatementHandler则封装了对JDBC CallableStatement对象的操作。
 
 ##### ParamenterHandler
 
-封装对jdbc parament对象的操，如果SQL语句中有参数占位符，在执行SQL语句之前，就需要为参数占位符设置。默认实现DefaultParameterHandler，观察setParameters方法
+封装对jdbc parament对象的操作，如果SQL语句中有参数占位符，在执行SQL语句之前，就需要为参数占位符设置。默认实现DefaultParameterHandler，观察setParameters方法
 
 ##### ResultSetHandler
 
