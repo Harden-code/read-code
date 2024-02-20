@@ -1,0 +1,359 @@
+static class MedicineExtendSerializer implements RedisSerializer<Medicine> {
+        private final static String pattern = "yyyy-MM-dd HH:mm:ss";
+
+
+        public final byte VERSION_1 = 0x1F;
+        public final ByteOrder DEFAULT_BYTE_ORDER = ByteOrder.BIG_ENDIAN;
+        public final int DEFAULT_LENGTH = 1 //版本号长度
+                + 8 // mask长度
+                + 8 * 8 //5个Long属性
+                + 7 * 4 //7个Integer属性
+                ;
+
+        public byte[] serialize(Medicine obj) throws SerializationException {
+            int length = DEFAULT_LENGTH + sizeOf(obj.getPharmacyNumber()) + sizeOf(obj.getMedicineNumber())
+                    + sizeStocks(obj.getBatchStock());
+            ByteBuffer buffer = ByteBuffer.allocate(length);
+            buffer.order(DEFAULT_BYTE_ORDER);
+            buffer.put(VERSION_1);
+
+            //4个Long
+            buffer.putLong(obj.getMask()); //所有是否
+
+            buffer.putLong(obj.getMedicinePharmacyId() == null
+                    ? 0L
+                    : Integer.valueOf(obj.getMedicinePharmacyId()));//门店药品ID
+            buffer.putLong((null == obj.getPrice() || obj.getPrice().getPrice() == null)
+                    ? 0L
+                    : obj.getPrice().getPrice());//零售价 (单位1/100分)
+            buffer.putLong((null == obj.getPrice() || obj.getPrice().getMemberPrice() == null)
+                    ? 0L
+                    : obj.getPrice().getMemberPrice());//会员价 (单位1/100分)
+            buffer.putLong((null == obj.getPrice() || obj.getPrice().getErpPrice() == null)
+                    ? 0L
+                    : obj.getPrice().getErpPrice());//ERP零售价 (单位1/100分)
+            buffer.putLong((null == obj.getPrice() || obj.getPrice().getErpMemberPrice() == null)
+                    ? 0L
+                    : obj.getPrice().getErpMemberPrice());//ERP会员价 (单位1/100分)
+
+
+            //8个Integer
+            buffer.putInt(obj.getPharmacyId() == null ? 0 : Integer.valueOf(obj.getPharmacyId()));//门店ID
+            buffer.putInt(obj.getMedicineId() == null ? 0 : obj.getMedicineId());//平台药品ID
+            buffer.putInt(obj.getLimitCount() == null ? 0 : obj.getLimitCount());//限购数目
+            buffer.putInt(obj.getDailyLimitAmount() == null ? 0 : obj.getDailyLimitAmount());//每日限购数量
+            buffer.putInt(obj.getLimitAmount() == null ? 0 : obj.getLimitAmount());//会员每单限购数量(秒杀价格限购数量)
+            buffer.putInt(obj.getNoticeCount() == null ? 0 : obj.getNoticeCount());//到货通知人数
+
+            buffer.putLong((obj.getStock() == null || obj.getStock().getStock() == null)
+                    ? 0
+                    : PriceUtil.valueOf(obj.getStock().getStock()));//虚拟库存(乘以10000,保证库存是整数)
+
+            buffer.putLong((obj.getStock() == null || obj.getStock().getErpStock() == null)
+                    ? 0
+                    : PriceUtil.valueOf(obj.getStock().getErpStock()));//虚拟库存(乘以10000,保证库存是整数)
+
+            buffer.putInt((obj.getSaleCount() == null || obj.getSaleCount().getMonthSaleCount() == null)
+                    ? 0
+                    : obj.getSaleCount().getMonthSaleCount());//月销量
+
+            //todo 批次
+            writeString(buffer, obj.getPharmacyNumber());
+            writeString(buffer, obj.getMedicineNumber());
+            serializeXlMedicineStock(obj.getBatchStock(), buffer);
+            return buffer.array();
+        }
+
+        public Medicine deserialize(byte[] array) throws SerializationException {
+            if (ArrayUtils.isEmpty(array)) {
+                return null;
+            }
+
+            if (array[0] != VERSION_1) {
+                return null;
+            }
+
+            ByteBuffer buffer = ByteBuffer.wrap(array);
+            buffer.order(DEFAULT_BYTE_ORDER);
+            byte version = buffer.get();
+
+            Medicine extend = new Medicine();
+
+            //4个Long
+            extend.setMask(buffer.getLong());//所有是否
+            extend.setMedicinePharmacyId(String.valueOf(buffer.getLong()));//门店药品ID
+
+            MedicinePrice price = new MedicinePrice();
+            price.setPrice(buffer.getLong());//零售价 (单位1/100分)
+            price.setMemberPrice(buffer.getLong());//会员价 (单位1/100分)
+            price.setErpPrice(buffer.getLong());//ERP零售价 (单位1/100分)
+            price.setErpMemberPrice(buffer.getLong());//ERP会员价 (单位1/100分)
+
+            //8个Integer
+            extend.setPharmacyId(String.valueOf(buffer.getInt()));//门店ID
+            extend.setMedicineId(buffer.getInt());//平台药品ID
+            extend.setLimitCount(buffer.getInt());//限购数目
+            extend.setDailyLimitAmount(buffer.getInt());//每日限购数量
+            extend.setLimitAmount(buffer.getInt());//会员每单限购数量(秒杀价格限购数量)
+            extend.setNoticeCount(buffer.getInt());//到货通知人数
+
+            MedicineStock stock = new MedicineStock();
+            stock.setStock(new BigDecimal(PriceUtil.toLongPrice(buffer.getLong())));//虚拟库存(乘以10000,保证库存是整数)
+            stock.setErpStock(new BigDecimal(PriceUtil.toLongPrice(buffer.getLong())));//虚拟库存(乘以10000,保证库存是整数)
+
+            MedicineSaleCount saleCount = new MedicineSaleCount();
+            saleCount.setMonthSaleCount(buffer.getInt());//月销量
+
+            extend.setPharmacyNumber(readString(buffer));
+            extend.setMedicineNumber(readString(buffer));
+            List<MedicineBatchStock> batchStocks = deserializeXlMedicineStock(buffer);
+            extend.setBatchStock(batchStocks);
+            extend.setPrice(price);
+            extend.setStock(stock);
+            extend.setSaleCount(saleCount);
+
+
+            return extend;
+        }
+
+
+        private static void writeString(ByteBuffer buf, String input) {
+            if (input == null) {
+                buf.put((byte) -1);
+            } else if ("".equals(input)) {
+                buf.put((byte) 0);
+            } else {
+                byte[] data = input.getBytes(StandardCharsets.UTF_8);
+                byte length = (byte) data.length;
+                buf.put(length);
+                buf.put(data);
+            }
+        }
+
+        private static String readString(ByteBuffer buf) {
+            int length = buf.get();
+            if (length < 0) {
+                return null;
+            } else if (length == 0) {
+                return "";
+            } else {
+                byte[] data = new byte[length];
+                buf.get(data, 0, length);
+                return new String(data, StandardCharsets.UTF_8);
+            }
+        }
+
+
+        private static void writeDate(ByteBuffer buf, Date date) {
+            if (date == null) {
+                buf.put((byte) -1);
+                return;
+            }
+            long time = date.getTime();
+            buf.put((byte) 1);
+            buf.putLong(time);
+
+        }
+
+        private static Date readDate(ByteBuffer buf) {
+            int dateLen = buf.get();
+            if (dateLen < 0) {
+                return null;
+            }
+
+            long time = buf.getLong();
+            return new Date(time);
+
+        }
+
+        private static int sizeOf(String input) {
+            if (input == null) {
+                return 1;
+            } else if ("".equals(input)) {
+                return 1;
+            } else {
+                byte[] data = input.getBytes(StandardCharsets.UTF_8);
+                return data.length;
+            }
+        }
+
+        public static int sizeStocks(List<MedicineBatchStock> stocks) {
+            //len of arr
+            if (stocks == null || stocks.isEmpty()) return 1;
+            //len of str  * 6(filed of len) + 4 * long(realQuantity,batchPrice,stockQuantity,lockQuantity) + len of arr
+            int result = stocks.size() * 6 + stocks.size() * 8 * 4 + 1;
+
+            //if null
+
+            for (MedicineBatchStock stock : stocks) {
+                if (StringUtils.isNotBlank(stock.getBatchNo())) {
+                    result += stock.getBatchNo().getBytes().length;
+                }
+
+                if (StringUtils.isNotBlank(stock.getBatchNumber())) {
+                    result += stock.getBatchNumber().getBytes().length;
+                }
+
+                if (StringUtils.isNotBlank(stock.getSupplier())) {
+                    result += stock.getSupplier().getBytes().length;
+                }
+
+                if (stock.getExpireTime() != null) {
+                    result += 8;
+                }
+
+                if (stock.getProductionDate() != null) {
+                    result += 8;
+                }
+
+                if (stock.getStockDate() != null) {
+                    result += 8;
+                }
+            }
+            return result;
+        }
+
+
+        public static List<MedicineBatchStock> deserializeXlMedicineStock(ByteBuffer array) {
+            List<MedicineBatchStock> stocks = new ArrayList<>();
+            int len = array.get();
+            for (int i = 0; i < len; i++) {
+                String batchNumber = readString(array);
+                String batchNo = readString(array);
+                String supplier = readString(array);
+
+                Date expireTime = readDate(array);
+                Date productionDate = readDate(array);
+                Date stockDate = readDate(array);
+
+                Long stockQuantity = array.getLong();
+                Long lockQuantity = array.getLong();
+                Long batchPrice = array.getLong();
+                Long realPrice = array.getLong();
+
+                MedicineBatchStock xl = new MedicineBatchStock();
+                xl.setBatchNumber(batchNumber);
+                xl.setSupplier(supplier);
+                xl.setExpireTime(expireTime);
+                xl.setProductionDate(productionDate);
+                xl.setStockDate(stockDate);
+                xl.setBatchNo(batchNo);
+                xl.setStockQuantity(PriceUtil.toBigDecimalPrice(stockQuantity));
+                xl.setLockQuantity(PriceUtil.toBigDecimalPrice(lockQuantity));
+                xl.setBatchPrice(batchPrice);
+                xl.setRealQuantity(PriceUtil.toBigDecimalPrice(realPrice));
+                stocks.add(xl);
+            }
+            return stocks;
+        }
+
+        public static void serializeXlMedicineStock(List<MedicineBatchStock> stocks, ByteBuffer buffer) {
+            if (stocks == null) {
+                byte len = (byte) 0;
+                buffer.put(len);
+                return;
+            }
+            byte len = (byte) stocks.size();
+            buffer.put(len);
+            for (MedicineBatchStock stock : stocks) {
+                writeString(buffer, stock.getBatchNumber());
+                writeString(buffer, stock.getBatchNo());
+                writeString(buffer, stock.getSupplier());
+
+                writeDate(buffer, stock.getExpireTime());
+                writeDate(buffer, stock.getProductionDate());
+                writeDate(buffer, stock.getStockDate());
+
+                buffer.putLong(stock.getStockQuantity() == null ? 0 : PriceUtil.valueOf(stock.getStockQuantity()));
+                buffer.putLong(stock.getLockQuantity() == null ? 0 : PriceUtil.valueOf(stock.getLockQuantity()));
+                buffer.putLong(stock.getBatchPrice() == null ? 0 : stock.getBatchPrice());
+
+                if (stock.getLockQuantity() != null && stock.getStockQuantity() != null) {
+                    BigDecimal lockQuantity = stock.getLockQuantity();
+                    BigDecimal value = stock.getStockQuantity();
+                    BigDecimal subtract = value.subtract(lockQuantity);
+                    buffer.putLong(PriceUtil.valueOf(subtract));
+                } else {
+                    buffer.putLong(0L);
+                }
+            }
+        }
+    }
+
+
+MASK & TYPE == MASK
+
+MASK |= (TYPE or 0)
+
+# 动态创建 interface  FeignClientBuilder
+public abstract class FeignInterface {
+    private final static Logger LOG = LoggerFactory.getLogger(FeignInterface.class);
+    private final static AtomicLong classIndex = new AtomicLong();
+    private final static String POST_MAPPING = "org.springframework.web.bind.annotation.PostMapping";
+    private final static String REQUEST_BODY = "org.springframework.web.bind.annotation.RequestBody";
+
+    public static Class createFeignInterface(Map<String, String> config, Class superClass) throws Exception {
+        Class post_mapping = superClass.getClassLoader().loadClass(POST_MAPPING);
+        Class request_body = superClass.getClassLoader().loadClass(REQUEST_BODY);
+
+        String className = createClassName();
+        AnnotationDescription requestBody = AnnotationDescription.Builder.ofType(request_body).build();
+        DynamicType.Builder<?> builder = new ByteBuddy().makeInterface().implement(superClass).name(className);
+        Method[] methods = superClass.getMethods();
+
+        for (Method method : methods) {
+
+            String methodName = method.getName();
+
+            if (!config.containsKey(methodName)) {
+                LOG.info("not found url: {}", methodName);
+                return null;
+            }
+
+            String path = config.get(methodName);
+            LOG.info("create method: {} {}", methodName, path);
+            AnnotationDescription postMapping = AnnotationDescription.Builder.ofType(post_mapping).defineArray("value", path).build();
+            Class[] params = method.getParameterTypes();
+            Type type = method.getGenericReturnType();
+            builder = builder.defineMethod(method.getName(), type, Visibility.PUBLIC)
+                    .withParameter(params[0])
+                    .annotateParameter(requestBody)
+                    .withoutCode()
+                    .annotateMethod(postMapping);
+        }
+
+        DynamicType.Unloaded unloaded = builder.make();
+        Class<?> clazz = unloaded.load(superClass.getClassLoader()).getLoaded();
+        LOG.info("feign interface class create success: {}", className);
+        return clazz;
+    }
+
+
+    private static String createClassName() {
+        return String.format("_%s_APIService", classIndex.incrementAndGet());
+    }
+}
+
+medicine       (门店药品信息[price,stock])
+medicine_plat  (基础信息)
+medicine_stock (库存和批次库存)
+
+
+成交量
+病种成交量
+客品次
+病种客品次
+客品数
+病种客品数
+一单一品率
+病种一单一品率
+A1成交量占比
+病种A1成交量占比
+A1销售占比
+病种A1销售占比
+关联搭配率
+病种关联搭配率
+药品关联搭配率
+套餐成交量占比
+商品套餐成交量占比
+
