@@ -39,7 +39,7 @@ AbstractApplicationContext#obtainFreshBeanFactory()方法
   - 设置 BeanFactory Id
   - 设置 “是否允许 BeanDefinition 重复定义“ - cutstomizeBeanFactory(DefaultListableBeanFactory)
   - 设置 “是否允许循环依赖” - customizeBeanFactory(DefaultListableBeanFactory)
-  - 加载 BeanDefinition - loadBeanDefinitions(DefaulListableBeanFactory)方法
+  - 加载 BeanDefinition - loadBeanDefinitions(DefaulListableBeanFactory)方法[注解和xml]
   - 关联新建 BeanFactory 到 Spring 应用上下文
 - 返回 Spring 应用上下文底层 BeanFactory - getBeanFactory();
 
@@ -62,7 +62,6 @@ AbstractApplicationContext#prepareBeanFactory(ConfigurableListableBeanFacotry)�
 注册 六大 Aware 接口
 
 
-
 + AbstractApplicationContext#prepareBeanFactory(ConfigurableListableBeanFactory )方法
   + 关联 ClassLoader
   + 设置 Bean 表达式处理器
@@ -73,6 +72,63 @@ AbstractApplicationContext#prepareBeanFactory(ConfigurableListableBeanFacotry)�
   + 注册 ApplicationListenerDetector 对象
   + 注册 LoadTimeWeaverAwareProcessor 对象
   + 注册单例对象 - Environment、Java System Properties 以及 OS 环境变量
+
+
+**postProcessBeanFactory**
+此时容器还没初始化,这里暴露出一个hook添加BeanPostProcessor,BeanFactoryPostProcessor修改加载BeanDefinition
+```text
+Modify the application context's internal bean factory after its standard
+initialization. All bean definitions will have been loaded, but no beans
+will have been instantiated yet. This allows for registering special
+BeanPostProcessors etc in certain ApplicationContext implementations.
+beanFactory the bean factory used by the application context
+```
+
+
+**invokeBeanFactoryPostProcessors**
+Invoke factory processors registered as beans in the context.
+主要执行BeanFactoryPostProcessors接口,这里应该注意排序问题
+`PostProcessorRegistrationDelegate#invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory, List<BeanFactoryPostProcessor>)`
+> ConfigurationClassPostProcessor 用来注册@Configuration的注解类里的Bean
+
+**registerBeanPostProcessors**
+Register bean processors that intercept bean creation.
+注册BeanPostProcessor Bean实例创建生命周期接口.
+> BeanFactoryPostProcessor是BeanDefinition生命周期接口.
+
+**initMessageSource**
+Initialize message source for this context.国际化文本
+
+
+**initApplicationEventMulticaster**
+Initialize event multicaster for this context.事件发送器
+
+
+**onRefresh**
+Initialize other special beans in specific context subclasses.
+
+
+**registerListeners**
+Check for listener beans and register them.
+
+
+**finishBeanFactoryInitialization**
+Instantiate all remaining (non-lazy-init) singletons.这里才开始创建getBean
+
+
+**finishRefresh**
+Last step: publish corresponding event.
+
+
+
+
+
+
+
+
+
+
+
 
 
 
